@@ -174,9 +174,6 @@ resource "aws_security_group" "ec2_sg" {
 
   tags = { Name = "ec2-sg" }
 }
-# -------------------------
-# APPLICATION LOAD BALANCER
-# -------------------------
 resource "aws_lb" "app_alb" {
   name               = "oneclick-alb"
   internal           = false
@@ -192,9 +189,6 @@ resource "aws_lb" "app_alb" {
   }
 }
 
-# -------------------------
-# TARGET GROUP
-# -------------------------
 resource "aws_lb_target_group" "app_tg" {
   name        = "oneclick-tg"
   port        = 8080
@@ -216,9 +210,6 @@ resource "aws_lb_target_group" "app_tg" {
   }
 }
 
-# -------------------------
-# LISTENER (HTTP 80 → TG)
-# -------------------------
 resource "aws_lb_listener" "http_listener" {
   load_balancer_arn = aws_lb.app_alb.arn
   port              = 80
@@ -229,9 +220,6 @@ resource "aws_lb_listener" "http_listener" {
     target_group_arn = aws_lb_target_group.app_tg.arn
   }
 }
-# -------------------------------
-# IAM Role for EC2 Instance
-# -------------------------------
 resource "aws_iam_role" "ec2_role" {
   name = "ec2-ssm-cloudwatch-role"
 
@@ -247,7 +235,6 @@ resource "aws_iam_role" "ec2_role" {
   })
 }
 
-# Attach SSM managed policy
 resource "aws_iam_role_policy_attachment" "ssm" {
   role       = aws_iam_role.ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
@@ -275,7 +262,8 @@ resource "aws_launch_template" "app_lt" {
 
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
 
-  user_data = filebase64("${path.module}/scripts/deploy.sh")
+  user_data = filebase64("${path.module}/../scripts/deploy.sh")
+
 }
 
 resource "aws_autoscaling_group" "app_asg" {
