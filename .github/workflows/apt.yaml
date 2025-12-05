@@ -12,11 +12,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
+      # 1. Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
- 
+      # 2. Install Terraform
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.6
+
+      # 3. Configure AWS credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -24,22 +30,22 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-1
 
-     
+      # 4. Terraform Init
       - name: Terraform Init
         working-directory: ./Terraform
         run: terraform init
 
-  
+      # 5. Terraform Validate
       - name: Terraform Validate
         working-directory: ./Terraform
         run: terraform validate
 
-   
+      # 6. Terraform Plan
       - name: Terraform Plan
         working-directory: ./Terraform
         run: terraform plan -out=tfplan
 
-
+      # 7. Terraform Apply
       - name: Terraform Apply
         working-directory: ./Terraform
         run: terraform apply -auto-approve tfplan
