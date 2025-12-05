@@ -87,6 +87,8 @@ Client → ALB (Public Subnets) → Target Group → ASG → EC2 (Private Subnet
 
 ---
 
+These Are Created By Manually (Route 53, ACM)
+
 # 🌐 Custom Domain & HTTPS (Optional)
 
 ### ✔ Custom Domain  
