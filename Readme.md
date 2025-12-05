@@ -41,11 +41,6 @@ Client → ALB (Public Subnets) → Target Group → ASG → EC2 (Private Subnet
 ### ✔ Route Tables  
 <img src="Screenshots/Route tables.jpg" width="500">
 
-### ✔ Route 53 (Optional Custom Domain)  
-<img src="Screenshots/Route 53.jpg" width="500">
-
-### ✔ SSL Certificate (ACM)  
-<img src="Screenshots/ACM.jpg" width="500">
 
 ---
 
@@ -96,6 +91,12 @@ Client → ALB (Public Subnets) → Target Group → ASG → EC2 (Private Subnet
 
 ### ✔ Custom Domain  
 <img src="Screenshots/CustomDomain.jpg" width="500">
+
+### ✔ Route 53 (Optional Custom Domain)  
+<img src="Screenshots/Route 53.jpg" width="500">
+
+### ✔ SSL Certificate (ACM)  
+<img src="Screenshots/ACM.jpg" width="500">
 
 ---
 
