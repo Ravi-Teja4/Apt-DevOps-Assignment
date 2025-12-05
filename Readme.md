@@ -1,3 +1,8 @@
+
+Live Domain Access: https://devopswithravi.xyz/
+
+
+
 # 🚀 DevOps One-Click Deployment on AWS  
 This project deploys a fully automated AWS infrastructure using **Terraform**, including a private EC2 Auto Scaling architecture behind an Application Load Balancer (ALB).  
 It also includes a simple REST API running on port **8080** with `/` and `/health` endpoints.
@@ -61,6 +66,8 @@ Client → ALB (Public Subnets) → Target Group → ASG → EC2 (Private Subnet
 ---
 
 # 🖥 Auto Scaling (ASG) & EC2 Instances
+# Template
+<img src="Screenshots/Template.jpg" width="500">
 
 ### ✔ Auto Scaling Group  
 <img src="Screenshots/AutoScaling.jpg" width="500">
@@ -92,8 +99,6 @@ Client → ALB (Public Subnets) → Target Group → ASG → EC2 (Private Subnet
 
 ---
 
-# 🧩 Terraform Template  
-<img src="Screenshots/Template.jpg" width="500">
 
 ---
 
