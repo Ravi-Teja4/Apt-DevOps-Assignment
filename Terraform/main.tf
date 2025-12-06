@@ -11,23 +11,21 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# ---------------------------
+#############################
 # VPC
-# ---------------------------
+#############################
 
 resource "aws_vpc" "main" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_support   = true
   enable_dns_hostnames = true
 
-  tags = {
-    Name = "aaaaa-bbbbb-vpc"
-  }
+  tags = { Name = "APT-Trading-vpc" }
 }
 
-# ---------------------------
-# PUBLIC SUBNETS
-# ---------------------------
+#############################
+# SUBNETS
+#############################
 
 resource "aws_subnet" "public_1" {
   vpc_id                  = aws_vpc.main.id
@@ -35,7 +33,7 @@ resource "aws_subnet" "public_1" {
   availability_zone       = "us-east-1a"
   map_public_ip_on_launch = true
 
-  tags = { Name = "aaaaa-bbbbb-public-subnet-1" }
+  tags = { Name = "APT-Trading-public-1" }
 }
 
 resource "aws_subnet" "public_2" {
@@ -44,19 +42,15 @@ resource "aws_subnet" "public_2" {
   availability_zone       = "us-east-1b"
   map_public_ip_on_launch = true
 
-  tags = { Name = "aaaaa-bbbbb-public-subnet-2" }
+  tags = { Name = "APT-Trading-public-2" }
 }
-
-# ---------------------------
-# PRIVATE SUBNETS
-# ---------------------------
 
 resource "aws_subnet" "private_1" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = "10.0.3.0/24"
   availability_zone = "us-east-1a"
 
-  tags = { Name = "aaaaa-bbbbb-private-subnet-1" }
+  tags = { Name = "APT-Trading-private-1" }
 }
 
 resource "aws_subnet" "private_2" {
@@ -64,35 +58,30 @@ resource "aws_subnet" "private_2" {
   cidr_block        = "10.0.4.0/24"
   availability_zone = "us-east-1b"
 
-  tags = { Name = "aaaaa-bbbbb-private-subnet-2" }
+  tags = { Name = "APT-Trading-private-2" }
 }
 
-# ---------------------------
-# INTERNET GATEWAY + ROUTING
-# ---------------------------
+#############################
+# GATEWAY + ROUTES
+#############################
 
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
-
-  tags = { Name = "aaaaa-bbbbb-igw" }
+  tags = { Name = "APT-Trading-igw" }
 }
 
 resource "aws_eip" "nat_eip" {
   domain = "vpc"
-
-  tags = { Name = "aaaaa-bbbbb-nat-eip" }
 }
 
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat_eip.id
   subnet_id     = aws_subnet.public_1.id
+  depends_on    = [aws_internet_gateway.igw]
 
-  depends_on = [aws_internet_gateway.igw]
-
-  tags = { Name = "aaaaa-bbbbb-nat-gateway" }
+  tags = { Name = "APT-Trading-nat" }
 }
 
-# PUBLIC ROUTE TABLE
 resource "aws_route_table" "public_rt" {
   vpc_id = aws_vpc.main.id
 
@@ -101,7 +90,7 @@ resource "aws_route_table" "public_rt" {
     gateway_id = aws_internet_gateway.igw.id
   }
 
-  tags = { Name = "aaaaa-bbbbb-public-rt" }
+  tags = { Name = "APT-Trading-public-rt" }
 }
 
 resource "aws_route_table_association" "public_1_assoc" {
@@ -114,7 +103,6 @@ resource "aws_route_table_association" "public_2_assoc" {
   route_table_id = aws_route_table.public_rt.id
 }
 
-# PRIVATE ROUTE TABLE
 resource "aws_route_table" "private_rt" {
   vpc_id = aws_vpc.main.id
 
@@ -123,7 +111,7 @@ resource "aws_route_table" "private_rt" {
     nat_gateway_id = aws_nat_gateway.nat.id
   }
 
-  tags = { Name = "aaaaa-bbbbb-private-rt" }
+  tags = { Name = "APT-Trading-private-rt" }
 }
 
 resource "aws_route_table_association" "private_1_assoc" {
@@ -136,17 +124,16 @@ resource "aws_route_table_association" "private_2_assoc" {
   route_table_id = aws_route_table.private_rt.id
 }
 
-# ---------------------------
+#############################
 # SECURITY GROUPS
-# ---------------------------
+#############################
 
 resource "aws_security_group" "alb_sg" {
-  name        = "aaaaa-bbbbb-alb-sg"
-  description = "Allow HTTP traffic from internet"
+  name        = "APT-Trading-alb-sg"
+  description = "Allow HTTP"
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description = "HTTP from anywhere"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -160,26 +147,15 @@ resource "aws_security_group" "alb_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "aaaaa-bbbbb-alb-sg" }
+  tags = { Name = "APT-Trading-alb-sg" }
 }
 
 resource "aws_security_group" "ec2_sg" {
-  name        = "aaaaa-bbbbb-ec2-sg"
-  description = "Allow traffic only from ALB"
+  name        = "APT-Trading-ec2-sg"
+  description = "Allow ALB → EC2"
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description = "Allow ALB to access EC2"
-    from_port   = 3000
-    to_port     = 3000
-    protocol    = "tcp"
-    security_groups = [
-      aws_security_group.alb_sg.id
-    ]
-  }
-
-  ingress {
-    description     = "Allow ALB to access EC2"
     from_port       = 8080
     to_port         = 8080
     protocol        = "tcp"
@@ -193,15 +169,15 @@ resource "aws_security_group" "ec2_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "aaaaa-bbbbb-ec2-sg" }
+  tags = { Name = "APT-Trading-ec2-sg" }
 }
 
-# ---------------------------
+#############################
 # LOAD BALANCER
-# ---------------------------
+#############################
 
 resource "aws_lb" "app_alb" {
-  name               = "aaaaa-bbbbb-alb"
+  name               = "APT-Trading-alb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
@@ -209,27 +185,23 @@ resource "aws_lb" "app_alb" {
     aws_subnet.public_1.id,
     aws_subnet.public_2.id
   ]
-
-  tags = { Name = "aaaaa-bbbbb-alb" }
 }
 
+#############################
+# TARGET GROUP
+#############################
+
 resource "aws_lb_target_group" "app_tg" {
-  name        = "aaaaa-bbbbb-tg"
+  name        = "APT-Trading-tg"
   port        = 8080
   protocol    = "HTTP"
   vpc_id      = aws_vpc.main.id
   target_type = "instance"
 
   health_check {
-    path                = "/health"
-    matcher             = "200"
-    interval            = 15
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
+    path    = "/"
+    matcher = "200"
   }
-
-  tags = { Name = "aaaaa-bbbbb-target-group" }
 }
 
 resource "aws_lb_listener" "http_listener" {
@@ -243,21 +215,19 @@ resource "aws_lb_listener" "http_listener" {
   }
 }
 
-# ---------------------------
-# IAM ROLES
-# ---------------------------
+#############################
+# IAM
+#############################
 
 resource "aws_iam_role" "ec2_role" {
-  name = "aaaaa-bbbbb-ec2-role"
+  name = "APT-Trading-ec2-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action    = "sts:AssumeRole"
-      Effect    = "Allow"
-      Principal = {
-        Service = "ec2.amazonaws.com"
-      }
+      Effect = "Allow"
+      Action = "sts:AssumeRole"
+      Principal = { Service = "ec2.amazonaws.com" }
     }]
   })
 }
@@ -267,22 +237,17 @@ resource "aws_iam_role_policy_attachment" "ssm" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-resource "aws_iam_role_policy_attachment" "cwlogs" {
-  role       = aws_iam_role.ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-}
-
 resource "aws_iam_instance_profile" "ec2_instance_profile" {
-  name = "aaaaa-bbbbb-instance-profile"
+  name = "APT-Trading-ec2-profile"
   role = aws_iam_role.ec2_role.name
 }
 
-# ---------------------------
+#############################
 # LAUNCH TEMPLATE
-# ---------------------------
+#############################
 
 resource "aws_launch_template" "app_lt" {
-  name_prefix   = "aaaaa-bbbbb-lt-"
+  name_prefix   = "APT-Trading-lt-"
   image_id      = "ami-0fa3fe0fa7920f68e"
   instance_type = "t3.micro"
 
@@ -297,12 +262,12 @@ resource "aws_launch_template" "app_lt" {
   user_data = filebase64("${path.module}/../scripts/deploy.sh")
 }
 
-# ---------------------------
+#############################
 # AUTO SCALING GROUP
-# ---------------------------
+#############################
 
 resource "aws_autoscaling_group" "app_asg" {
-  name             = "aaaaa-bbbbb-asg"
+  name             = "APT-Trading-asg"
   desired_capacity = 2
   max_size         = 3
   min_size         = 1
@@ -326,7 +291,7 @@ resource "aws_autoscaling_group" "app_asg" {
 
   tag {
     key                 = "Name"
-    value               = "aaaaa-bbbbb-instance"
+    value               = "APT-Trading-instance"
     propagate_at_launch = true
   }
 
