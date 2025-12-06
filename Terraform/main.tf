@@ -20,7 +20,7 @@ resource "aws_vpc" "main" {
   enable_dns_support   = true
   enable_dns_hostnames = true
 
-  tags = { Name = "APT-Trading-vpc" }
+  tags = { Name = "venkat-project-vpc" }
 }
 
 #############################
@@ -33,7 +33,7 @@ resource "aws_subnet" "public_1" {
   availability_zone       = "us-east-1a"
   map_public_ip_on_launch = true
 
-  tags = { Name = "APT-Trading-public-1" }
+  tags = { Name = "venkat-project-public-1" }
 }
 
 resource "aws_subnet" "public_2" {
@@ -42,7 +42,7 @@ resource "aws_subnet" "public_2" {
   availability_zone       = "us-east-1b"
   map_public_ip_on_launch = true
 
-  tags = { Name = "APT-Trading-public-2" }
+  tags = { Name = "venkat-project-public-2" }
 }
 
 resource "aws_subnet" "private_1" {
@@ -50,7 +50,7 @@ resource "aws_subnet" "private_1" {
   cidr_block        = "10.0.3.0/24"
   availability_zone = "us-east-1a"
 
-  tags = { Name = "APT-Trading-private-1" }
+  tags = { Name = "venkat-project-private-1" }
 }
 
 resource "aws_subnet" "private_2" {
@@ -58,16 +58,16 @@ resource "aws_subnet" "private_2" {
   cidr_block        = "10.0.4.0/24"
   availability_zone = "us-east-1b"
 
-  tags = { Name = "APT-Trading-private-2" }
+  tags = { Name = "venkat-project-private-2" }
 }
 
 #############################
-# GATEWAY + ROUTES
+# INTERNET GATEWAY + NAT
 #############################
 
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
-  tags = { Name = "APT-Trading-igw" }
+  tags   = { Name = "venkat-project-igw" }
 }
 
 resource "aws_eip" "nat_eip" {
@@ -79,8 +79,12 @@ resource "aws_nat_gateway" "nat" {
   subnet_id     = aws_subnet.public_1.id
   depends_on    = [aws_internet_gateway.igw]
 
-  tags = { Name = "APT-Trading-nat" }
+  tags = { Name = "venkat-project-nat" }
 }
+
+#############################
+# ROUTE TABLES
+#############################
 
 resource "aws_route_table" "public_rt" {
   vpc_id = aws_vpc.main.id
@@ -90,7 +94,7 @@ resource "aws_route_table" "public_rt" {
     gateway_id = aws_internet_gateway.igw.id
   }
 
-  tags = { Name = "APT-Trading-public-rt" }
+  tags = { Name = "venkat-project-public-rt" }
 }
 
 resource "aws_route_table_association" "public_1_assoc" {
@@ -111,7 +115,7 @@ resource "aws_route_table" "private_rt" {
     nat_gateway_id = aws_nat_gateway.nat.id
   }
 
-  tags = { Name = "APT-Trading-private-rt" }
+  tags = { Name = "venkat-project-private-rt" }
 }
 
 resource "aws_route_table_association" "private_1_assoc" {
@@ -129,8 +133,8 @@ resource "aws_route_table_association" "private_2_assoc" {
 #############################
 
 resource "aws_security_group" "alb_sg" {
-  name        = "APT-Trading-alb-sg"
-  description = "Allow HTTP"
+  name        = "venkat-project-alb-sg"
+  description = "Allow HTTP traffic to ALB"
   vpc_id      = aws_vpc.main.id
 
   ingress {
@@ -147,12 +151,12 @@ resource "aws_security_group" "alb_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "APT-Trading-alb-sg" }
+  tags = { Name = "venkat-project-alb-sg" }
 }
 
 resource "aws_security_group" "ec2_sg" {
-  name        = "APT-Trading-ec2-sg"
-  description = "Allow ALB → EC2"
+  name        = "venkat-project-ec2-sg"
+  description = "Allow inbound traffic from ALB to EC2 instances"
   vpc_id      = aws_vpc.main.id
 
   ingress {
@@ -169,7 +173,7 @@ resource "aws_security_group" "ec2_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "APT-Trading-ec2-sg" }
+  tags = { Name = "venkat-project-ec2-sg" }
 }
 
 #############################
@@ -177,7 +181,7 @@ resource "aws_security_group" "ec2_sg" {
 #############################
 
 resource "aws_lb" "app_alb" {
-  name               = "APT-Trading-alb"
+  name               = "venkat-project-alb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
@@ -188,19 +192,23 @@ resource "aws_lb" "app_alb" {
 }
 
 #############################
-# TARGET GROUP
+# TARGET GROUP (WORKING)
 #############################
 
 resource "aws_lb_target_group" "app_tg" {
-  name        = "APT-Trading-tg"
+  name        = "venkat-project-tg"
   port        = 8080
   protocol    = "HTTP"
   vpc_id      = aws_vpc.main.id
   target_type = "instance"
 
   health_check {
-    path    = "/"
-    matcher = "200"
+    path                = "/"
+    matcher             = "200"
+    timeout             = 5
+    interval            = 15
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
   }
 }
 
@@ -216,11 +224,11 @@ resource "aws_lb_listener" "http_listener" {
 }
 
 #############################
-# IAM
+# IAM ROLE + INSTANCE PROFILE
 #############################
 
 resource "aws_iam_role" "ec2_role" {
-  name = "APT-Trading-ec2-role"
+  name = "venkat-project-ec2-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -237,8 +245,8 @@ resource "aws_iam_role_policy_attachment" "ssm" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-resource "aws_iam_instance_profile" "ec2_instance_profile" {
-  name = "APT-Trading-ec2-profile"
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "venkat-project-ec2-profile"
   role = aws_iam_role.ec2_role.name
 }
 
@@ -247,12 +255,12 @@ resource "aws_iam_instance_profile" "ec2_instance_profile" {
 #############################
 
 resource "aws_launch_template" "app_lt" {
-  name_prefix   = "APT-Trading-lt-"
+  name_prefix   = "venkat-project-lt-"
   image_id      = "ami-0fa3fe0fa7920f68e"
   instance_type = "t3.micro"
 
   iam_instance_profile {
-    name = aws_iam_instance_profile.ec2_instance_profile.name
+    name = aws_iam_instance_profile.ec2_profile.name
   }
 
   key_name = "new"
@@ -267,7 +275,7 @@ resource "aws_launch_template" "app_lt" {
 #############################
 
 resource "aws_autoscaling_group" "app_asg" {
-  name             = "APT-Trading-asg"
+  name             = "venkat-project-asg"
   desired_capacity = 2
   max_size         = 3
   min_size         = 1
@@ -291,7 +299,7 @@ resource "aws_autoscaling_group" "app_asg" {
 
   tag {
     key                 = "Name"
-    value               = "APT-Trading-instance"
+    value               = "venkat-project-ec2"
     propagate_at_launch = true
   }
 
