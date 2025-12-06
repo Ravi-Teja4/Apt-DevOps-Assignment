@@ -221,7 +221,7 @@ resource "aws_lb_listener" "http_listener" {
   }
 }
 resource "aws_iam_role" "ec2_role" {
-  name = "ec2-ssm-cloudwatch-role"
+  name = "ec2-ssm"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
