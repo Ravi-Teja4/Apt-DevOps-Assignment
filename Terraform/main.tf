@@ -221,7 +221,7 @@ resource "aws_lb_listener" "http_listener" {
   }
 }
 resource "aws_iam_role" "ec2_role" {
-  name = "ec2-ssm"
+  name = "ec2"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -248,7 +248,7 @@ resource "aws_iam_role_policy_attachment" "cwlogs" {
 
 # Create Instance Profile
 resource "aws_iam_instance_profile" "ec2_instance_profile" {
-  name = "ec2-instance-profile"
+  name = "ec2-instance"
   role = aws_iam_role.ec2_role.name
 }
 resource "aws_launch_template" "app_lt" {
